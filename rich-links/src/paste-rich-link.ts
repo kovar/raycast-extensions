@@ -1,7 +1,7 @@
 // Rich Link Paste
 // Copy title/reference FIRST → Copy permalink SECOND → Trigger this
 
-import { Clipboard, showHUD } from "@raycast/api";
+import { Clipboard } from "@raycast/api";
 import { execSync } from "child_process";
 
 function escapeHtml(str: string): string {
@@ -38,10 +38,7 @@ export default async function main() {
     const titleRaw = await Clipboard.readText({ offset: 1 });
     const url = await Clipboard.readText({ offset: 0 });
 
-    if (!url) {
-      await showHUD("No URL found on clipboard");
-      return;
-    }
+    if (!url) return;
 
     const title = (titleRaw || url).trim().replace(/\s+/g, " ");
     const safeUrl = escapeHtml(url);
@@ -49,20 +46,15 @@ export default async function main() {
     const html = `<a href="${safeUrl}">${safeTitle}</a>`;
     const text = title;
 
-    // Clipboard.copy correctly sets HTML on both platforms
     await Clipboard.copy({ html, text });
 
     if (process.platform === "win32") {
-      // Clipboard.paste doesn't support rich HTML on Windows,
-      // so use Clipboard.copy (proven to set HTML) + keybd_event Ctrl+V
       await new Promise((resolve) => setTimeout(resolve, 150));
       simulateCtrlV();
     } else {
       await Clipboard.paste({ html, text });
     }
-
-    await showHUD("Rich link pasted!");
-  } catch (error) {
-    await showHUD(`Error: ${error}`);
+  } catch {
+    // no-op
   }
 }
