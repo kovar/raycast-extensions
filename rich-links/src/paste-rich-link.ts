@@ -23,8 +23,6 @@ export default async function main() {
     const html = `<a href="${safeUrl}">${safeTitle}</a>`;
     const text = title;
 
-    await Clipboard.copy({ html, text });
-    await new Promise((resolve) => setTimeout(resolve, 200));
     await Clipboard.paste({ html, text });
     await showHUD("Rich link pasted!");
   } catch (error) {
