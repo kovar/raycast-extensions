@@ -34,22 +34,25 @@ function buildCfHtml(fragment: string): string {
   );
 }
 
-function windowsCopyAndPaste(cfHtml: string, plainText: string): void {
-  // Escape for PowerShell single-quoted string (double up single quotes)
-  const escapedCfHtml = cfHtml.replace(/'/g, "''");
-  const escapedText = plainText.replace(/'/g, "''");
-
+function windowsCopyAndPaste(cfHtml: string, plainText: string): string {
   const ps = `
 Add-Type -AssemblyName System.Windows.Forms
 $data = New-Object System.Windows.Forms.DataObject
-$data.SetData([System.Windows.Forms.DataFormats]::Html, '${escapedCfHtml}')
-$data.SetData([System.Windows.Forms.DataFormats]::UnicodeText, '${escapedText}')
+$data.SetData([System.Windows.Forms.DataFormats]::Html, '${cfHtml.replace(/'/g, "''")}')
+$data.SetData([System.Windows.Forms.DataFormats]::UnicodeText, '${plainText.replace(/'/g, "''")}')
 [System.Windows.Forms.Clipboard]::SetDataObject($data, $true)
-Start-Sleep -Milliseconds 100
+Start-Sleep -Milliseconds 150
 [System.Windows.Forms.SendKeys]::SendWait('^v')
-`.trim();
+Write-Output 'OK'
+`;
 
-  execSync(`powershell -command "${ps.replace(/"/g, '\\"')}"`, { windowsHide: true });
+  // Use -EncodedCommand to avoid all shell escaping issues
+  const encoded = Buffer.from(ps, "utf16le").toString("base64");
+  const result = execSync(`powershell -NoProfile -NonInteractive -EncodedCommand ${encoded}`, {
+    windowsHide: true,
+    timeout: 5000,
+  });
+  return result.toString().trim();
 }
 
 export default async function main() {
@@ -70,12 +73,12 @@ export default async function main() {
 
     if (process.platform === "win32") {
       const cfHtml = buildCfHtml(fragment);
-      windowsCopyAndPaste(cfHtml, text);
+      const result = windowsCopyAndPaste(cfHtml, text);
+      await showHUD(result === "OK" ? "Rich link pasted!" : `PS: ${result}`);
     } else {
       await Clipboard.paste({ html: fragment, text });
+      await showHUD("Rich link pasted!");
     }
-
-    await showHUD("Rich link pasted!");
   } catch (error) {
     await showHUD(`Error: ${error}`);
   }
