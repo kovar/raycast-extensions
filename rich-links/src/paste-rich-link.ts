@@ -71,13 +71,17 @@ export default async function main() {
     const fragment = `<a href="${safeUrl}">${safeTitle}</a>`;
     const text = title;
 
-    if (process.platform === "win32") {
+    // Debug: show platform so we know which path is taken
+    const platform = process.platform;
+    const isWindows = platform === "win32";
+
+    if (isWindows) {
       const cfHtml = buildCfHtml(fragment);
       const result = windowsCopyAndPaste(cfHtml, text);
-      await showHUD(result === "OK" ? "Rich link pasted!" : `PS: ${result}`);
+      await showHUD(result === "OK" ? `Pasted! (${platform})` : `PS: ${result}`);
     } else {
       await Clipboard.paste({ html: fragment, text });
-      await showHUD("Rich link pasted!");
+      await showHUD(`Pasted! (${platform})`);
     }
   } catch (error) {
     await showHUD(`Error: ${error}`);
