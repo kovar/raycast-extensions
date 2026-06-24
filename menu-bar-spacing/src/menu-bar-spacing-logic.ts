@@ -64,16 +64,16 @@ export function validateSpacingValues(
 
 export function buildApplyCommands(spacing: number, padding: number): string[] {
   return [
-    `defaults -currentHost -globalDomain ${SPACING_KEY} -int ${spacing}`,
-    `defaults -currentHost -globalDomain ${PADDING_KEY} -int ${padding}`,
+    `defaults -currentHost write -globalDomain ${SPACING_KEY} -int ${spacing}`,
+    `defaults -currentHost write -globalDomain ${PADDING_KEY} -int ${padding}`,
     "killall ControlCenter",
   ];
 }
 
 export function buildResetCommands(): string[] {
   return [
-    `defaults -currentHost -globalDomain ${SPACING_KEY} delete`,
-    `defaults -currentHost -globalDomain ${PADDING_KEY} delete`,
+    `defaults -currentHost delete -globalDomain ${SPACING_KEY}`,
+    `defaults -currentHost delete -globalDomain ${PADDING_KEY}`,
     "killall ControlCenter",
   ];
 }

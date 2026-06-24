@@ -1,3 +1,4 @@
+import { execSync } from "child_process";
 import { describe, expect, test } from "bun:test";
 import {
   applyMenuBarSpacing,
@@ -32,15 +33,15 @@ describe("validateSpacingValues", () => {
 });
 
 describe("buildApplyCommands", () => {
-  test("builds defaults writes and killall for concrete values", () => {
+  test("builds defaults write commands and killall for concrete values", () => {
     const commands = buildApplyCommands(6, 12);
 
     expect(commands).toHaveLength(3);
     expect(commands[0]).toBe(
-      `defaults -currentHost -globalDomain ${SPACING_KEY} -int 6`,
+      `defaults -currentHost write -globalDomain ${SPACING_KEY} -int 6`,
     );
     expect(commands[1]).toBe(
-      `defaults -currentHost -globalDomain ${PADDING_KEY} -int 12`,
+      `defaults -currentHost write -globalDomain ${PADDING_KEY} -int 12`,
     );
     expect(commands[2]).toBe("killall ControlCenter");
   });
@@ -49,6 +50,7 @@ describe("buildApplyCommands", () => {
     const first = buildApplyCommands(0, 0);
     const second = buildApplyCommands(0, 0);
     expect(first).toEqual(second);
+    expect(first[0]).toContain("write -globalDomain");
     expect(first[0]).toContain("-int 0");
     expect(first[1]).toContain("-int 0");
   });
@@ -60,10 +62,10 @@ describe("buildResetCommands", () => {
 
     expect(commands).toHaveLength(3);
     expect(commands[0]).toBe(
-      `defaults -currentHost -globalDomain ${SPACING_KEY} delete`,
+      `defaults -currentHost delete -globalDomain ${SPACING_KEY}`,
     );
     expect(commands[1]).toBe(
-      `defaults -currentHost -globalDomain ${PADDING_KEY} delete`,
+      `defaults -currentHost delete -globalDomain ${PADDING_KEY}`,
     );
     expect(commands[2]).toBe("killall ControlCenter");
   });
@@ -78,10 +80,41 @@ describe("applyMenuBarSpacing", () => {
 
     expect(returned).toEqual(buildApplyCommands(6, 12));
     expect(executed).toEqual(returned);
+    expect(executed[0]).toContain("write -globalDomain");
     expect(executed[0]).toContain(SPACING_KEY);
     expect(executed[0]).toContain("-int 6");
     expect(executed[1]).toContain(PADDING_KEY);
     expect(executed[1]).toContain("-int 12");
+  });
+
+  test("writes preferences via real defaults commands", () => {
+    const testSpacing = 7;
+    const testPadding = 11;
+
+    try {
+      const commands = buildApplyCommands(testSpacing, testPadding);
+      for (const command of commands.slice(0, 2)) {
+        execSync(command, { stdio: "pipe" });
+      }
+
+      const spacing = execSync(
+        `defaults -currentHost read -globalDomain ${SPACING_KEY}`,
+        { encoding: "utf8" },
+      ).trim();
+      const padding = execSync(
+        `defaults -currentHost read -globalDomain ${PADDING_KEY}`,
+        { encoding: "utf8" },
+      ).trim();
+
+      expect(spacing).toBe(String(testSpacing));
+      expect(padding).toBe(String(testPadding));
+    } finally {
+      resetMenuBarSpacing((command) => {
+        if (!command.startsWith("killall ")) {
+          execSync(command, { stdio: "pipe" });
+        }
+      });
+    }
   });
 });
 
@@ -94,7 +127,11 @@ describe("resetMenuBarSpacing", () => {
 
     expect(returned).toEqual(buildResetCommands());
     expect(executed).toEqual(returned);
-    expect(executed[0]).toContain(`${SPACING_KEY} delete`);
-    expect(executed[1]).toContain(`${PADDING_KEY} delete`);
+    expect(executed[0]).toBe(
+      `defaults -currentHost delete -globalDomain ${SPACING_KEY}`,
+    );
+    expect(executed[1]).toBe(
+      `defaults -currentHost delete -globalDomain ${PADDING_KEY}`,
+    );
   });
 });
