@@ -26,10 +26,7 @@ export type ValidationError = {
 
 export type SpacingValidationResult = ValidatedSpacingValues | ValidationError;
 
-export function parseNonNegativeInteger(
-  value: string,
-  fieldName: string,
-): number | ValidationError {
+export function parseNonNegativeInteger(value: string, fieldName: string): number | ValidationError {
   const trimmed = value.trim();
   if (trimmed.length === 0) {
     return { error: `${fieldName} is required` };
@@ -42,10 +39,7 @@ export function parseNonNegativeInteger(
   return Number.parseInt(trimmed, 10);
 }
 
-export function validateSpacingValues(
-  spacing: string,
-  padding: string,
-): SpacingValidationResult {
+export function validateSpacingValues(spacing: string, padding: string): SpacingValidationResult {
   const parsedSpacing = parseNonNegativeInteger(spacing, "Spacing");
   if (typeof parsedSpacing !== "number") {
     return parsedSpacing;
@@ -114,9 +108,7 @@ export function applyMenuBarSpacing(
   return commands;
 }
 
-export function resetMenuBarSpacing(
-  execute: CommandExecutor = defaultExecutor,
-): string[] {
+export function resetMenuBarSpacing(execute: CommandExecutor = defaultExecutor): string[] {
   const commands = buildResetCommands();
   for (const command of commands) {
     execute(command);

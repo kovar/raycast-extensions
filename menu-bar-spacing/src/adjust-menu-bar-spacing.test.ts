@@ -19,6 +19,17 @@ beforeAll(() => {
       },
     },
   }));
+
+  mock.module("@raycast/utils", () => ({
+    useForm: () => ({
+      handleSubmit: async () => {},
+      itemProps: {
+        spacing: { id: "spacing", value: "6", onChange: () => {} },
+        padding: { id: "padding", value: "12", onChange: () => {} },
+      },
+      setValue: () => {},
+    }),
+  }));
 });
 
 describe("adjust-menu-bar-spacing entry module", () => {
